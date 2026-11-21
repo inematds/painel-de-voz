@@ -56,6 +56,8 @@ Quem já tem o ambiente do inemavox com faster-whisper pode usar aquele Python e
    O comando usa o motor simulado do Intelecto. Para conversar com um modelo de IA, abra o Ollama, rode `ollama list` em outro terminal e copie um nome da coluna `NAME`. Pare a ponte com Ctrl+C e execute a mesma linha acrescentando `--intelecto-model NOME-DO-MODELO-LOCAL`, com o nome copiado no lugar do marcador. A conversa passa pelo Ollama em `127.0.0.1:11434`. O adaptador mantém estado próprio em `~/.painel-de-voz/intelecto` e abre a conversa com um registro vazio de ferramentas. A memória direta do Intelecto pode guardar pedidos como “lembre que…”.
 
 2. **Experimente voz**. Abra o painel local, clique em **Gravar pergunta**, permita o microfone, fale e clique em **Parar e transcrever**. Revise e envie. Com o som ligado, o Piper lê a resposta em português. Grave comandos de até 30 segundos. A ponte toca até 3.000 caracteres por resposta.
+   Ative “Enviar automaticamente após transcrever” para enviar a fala assim que o texto estiver pronto. Com a opção desligada, você pode revisar o texto e clicar em Enviar. Escolha Robô, Mulher-robô, Onda de áudio ou Núcleo em Visual. A onda mostra o sinal real do microfone e do áudio reproduzido pelo painel. O núcleo pulsa e a boca dos robôs acompanha a intensidade desse sinal.
+
 
 3. **Conecte outro assistente**. A opção `--adapter` vem por último e recebe o executável e seus argumentos fixos. A cada turno, o processo recebe um JSON em stdin e devolve um JSON em stdout. Use stderr para diagnóstico e trate `session` como identificador para reusar o histórico. A ponte impõe 85 segundos por turno.
 
@@ -69,7 +71,7 @@ Quem já tem o ambiente do inemavox com faster-whisper pode usar aquele Python e
    |---|---|
    | `{"session":"uuid","text":"me dê o briefing"}` | `{"reply":"Bom dia. Sua agenda tem dois compromissos."}` |
 
-O processo do adaptador roda com as permissões de quem inicia a ponte. Configure apenas um executável que você já conhece. O painel público não encaminha áudio ao serviço local. A ponte aceita conexões apenas em loopback e exige a origem local nos pedidos. O núcleo e a onda representam estados da conversa. Os movimentos não são uma medição da amplitude do áudio.
+O processo do adaptador roda com as permissões de quem inicia a ponte. Configure apenas um executável que você já conhece. O painel público não encaminha áudio ao serviço local. A ponte aceita conexões apenas em loopback e exige a origem local nos pedidos. O painel mede o áudio do briefing e das respostas reproduzidas pela ponte local. A leitura pela voz do navegador pode tocar sem que o painel tenha acesso ao sinal.
 
 ## Baseado em Mark-LVII
 

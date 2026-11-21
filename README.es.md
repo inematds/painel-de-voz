@@ -56,6 +56,8 @@ Si ya tienes el entorno de inemavox con faster-whisper, puedes usar ese Python y
    El comando usa el motor simulado de Intelecto. Para conversar con un modelo de IA, abre Ollama, ejecuta `ollama list` en otra terminal y copia un nombre de la columna `NAME`. Detén el puente con Ctrl+C y ejecuta la misma línea añadiendo `--intelecto-model NOMBRE-DEL-MODELO-LOCAL`, con el nombre copiado en lugar del marcador. La conversación pasa por Ollama en `127.0.0.1:11434`. El adaptador mantiene su propio estado en `~/.painel-de-voz/intelecto` y abre la conversación con un registro vacío de herramientas. La memoria directa de Intelecto puede guardar solicitudes como “recuerda que…”.
 
 2. **Prueba la voz**. Abre el panel local, haz clic en **Gravar pergunta**, permite el uso del micrófono, habla y haz clic en **Parar e transcrever**. Revisa y envía. Con el sonido activado, Piper lee la respuesta en portugués. Graba comandos de hasta 30 segundos. El puente reproduce hasta 3.000 caracteres por respuesta.
+   Activa “Enviar automaticamente após transcrever” para enviar el habla en cuanto el texto esté listo. Con esta opción desactivada, puedes revisar el texto y hacer clic en Enviar. Elige Robô, Mulher-robô, Onda de áudio o Núcleo en Visual. La onda muestra la señal real del micrófono y del audio reproducido por el panel. El núcleo pulsa y la boca de los robots acompaña la intensidad de esa señal.
+
 
 3. **Conecta otro asistente**. La opción `--adapter` va al final y recibe el ejecutable y sus argumentos fijos. En cada turno, el proceso recibe un JSON por stdin y devuelve un JSON por stdout. Usa stderr para el diagnóstico y trata `session` como identificador para reutilizar el historial. El puente impone un límite de 85 segundos por turno.
 
@@ -69,7 +71,7 @@ Si ya tienes el entorno de inemavox con faster-whisper, puedes usar ese Python y
    |---|---|
    | `{"session":"uuid","text":"me dê o briefing"}` | `{"reply":"Bom dia. Sua agenda tem dois compromissos."}` |
 
-El proceso del adaptador se ejecuta con los permisos de quien inicia el puente. Configura solo un ejecutable que ya conozcas. El panel público no envía audio al servicio local. El puente solo acepta conexiones de loopback y exige el origen local en las solicitudes. El núcleo y la onda representan estados de la conversación. Los movimientos no miden la amplitud del audio.
+El proceso del adaptador se ejecuta con los permisos de quien inicia el puente. Configura solo un ejecutable que ya conozcas. El panel público no envía audio al servicio local. El puente solo acepta conexiones de loopback y exige el origen local en las solicitudes. El panel mide el audio del briefing y de las respuestas reproducidas por el puente local. La lectura con la voz del navegador puede sonar sin que el panel tenga acceso a la señal.
 
 ## Basado en Mark-LVII
 

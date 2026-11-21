@@ -13,7 +13,14 @@
   <section class="stage" aria-labelledby="title">
     <div class="stage-top">
       <div><h1 id="title">Painel de Voz</h1><p id="mode">Demonstração · respostas de exemplo</p></div>
-      <button id="visual" type="button" aria-pressed="false">Modo onda</button>
+      <label class="visual-choice" for="visual">Visual
+        <select id="visual">
+          <option value="robot">Robô</option>
+          <option value="robot-f">Mulher-robô</option>
+          <option value="wave">Onda de áudio</option>
+          <option value="core">Núcleo</option>
+        </select>
+      </label>
     </div>
     <canvas id="hologram" aria-hidden="true"></canvas>
     <div class="instrument">
@@ -24,6 +31,7 @@
         <button id="mic" type="button" aria-pressed="false">Gravar pergunta</button>
         <button id="voice" type="button" aria-pressed="false">Ligar som</button>
       </div>
+      <label class="voice-option"><input id="auto-send" type="checkbox"> Enviar automaticamente após transcrever</label>
     </div>
   </section>
   <section class="conversation" aria-labelledby="conversation-title">

@@ -56,6 +56,8 @@ If you already have the inemavox environment with faster-whisper, you can use th
    The command uses Intelecto's simulated engine. To talk to an AI model, open Ollama, run `ollama list` in another terminal, and copy a name from the `NAME` column. Stop the bridge with Ctrl+C and run the same line, adding `--intelecto-model LOCAL-MODEL-NAME` with the copied name in place of the placeholder. The conversation goes through Ollama at `127.0.0.1:11434`. The adapter keeps its own state in `~/.painel-de-voz/intelecto` and opens the conversation with an empty tool registry. Intelecto's direct memory can store requests such as “remember that…”.
 
 2. **Try voice**. Open the local panel, click **Gravar pergunta**, allow microphone access, speak, and click **Parar e transcrever**. Review and send. With sound on, Piper reads the response in Portuguese. Record commands up to 30 seconds long. The bridge plays up to 3,000 characters per response.
+   Enable “Enviar automaticamente após transcrever” to send the speech as soon as the text is ready. With this option off, you can review the text and click “Enviar”. Choose Robô, Mulher-robô, Onda de áudio, or Núcleo in Visual. The wave shows the actual signal from the microphone and audio played by the panel. The core pulses, and the robots’ mouths follow the signal’s intensity.
+
 
 3. **Connect another assistant**. The `--adapter` option goes last and takes the executable and its fixed arguments. Each turn, the process receives JSON on stdin and returns JSON on stdout. Use stderr for diagnostics and treat `session` as an identifier for reusing the history. The bridge enforces an 85-second limit per turn.
 
@@ -69,7 +71,7 @@ If you already have the inemavox environment with faster-whisper, you can use th
    |---|---|
    | `{"session":"uuid","text":"me dê o briefing"}` | `{"reply":"Bom dia. Sua agenda tem dois compromissos."}` |
 
-The adapter process runs with the permissions of the person who starts the bridge. Configure only an executable you already know. The public panel does not forward audio to the local service. The bridge accepts connections only on loopback and requires the local origin in requests. The core and wave represent conversation states. Their movements do not measure audio amplitude.
+The adapter process runs with the permissions of the person who starts the bridge. Configure only an executable you already know. The public panel does not forward audio to the local service. The bridge accepts connections only on loopback and requires the local origin in requests. The panel measures audio from the briefing and responses played through the local bridge. Browser voice playback may work without the panel having access to the signal.
 
 ## Based on Mark-LVII
 

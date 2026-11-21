@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent
 APP_FILES = {
     'panel.js': 'text/javascript; charset=utf-8',
     'hologram.js': 'text/javascript; charset=utf-8',
+    'voice-meter.js': 'text/javascript; charset=utf-8',
     'style.css': 'text/css; charset=utf-8',
     'briefing.mp3': 'audio/mpeg',
 }

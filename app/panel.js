@@ -1,21 +1,36 @@
 import {animate} from './hologram.js';
+import {createVoiceMeter} from './voice-meter.js';
 
 const $ = (id) => document.getElementById(id);
 const form = document.querySelector('form');
+const autoSend = $('auto-send');
+const autoSendKey = 'painel-de-voz-auto-send';
+try {
+  autoSend.checked = localStorage.getItem(autoSendKey) === 'true';
+} catch {
+  // A preferência ainda funciona nesta aba se o armazenamento estiver bloqueado.
+}
+autoSend.addEventListener('change', () => {
+  try {
+    localStorage.setItem(autoSendKey, String(autoSend.checked));
+  } catch {
+    // Mantém a escolha feita nesta aba.
+  }
+});
 const bridge = location.hostname === '127.0.0.1' && document.documentElement.dataset.bridge === 'yes';
 const briefing = 'Neste briefing de exemplo, você tem cinco mensagens simuladas e uma reunião às dez. O painel está pronto para receber seu próximo pedido.';
 const status = {idle:'Pronto', recording:'Gravando', processing:'Processando', speaking:'Falando', error:'Atenção'};
 const session = crypto.randomUUID();
 const speechLanguage = {langs:['pt-BR'], processLocally:true};
 let state = 'idle';
-let wave = false;
+const meter = createVoiceMeter();
 let voice = false;
 let recorder;
 let captureTimer;
 let audio;
 let playbackUrl;
 let speechGeneration = 0;
-const redraw = animate(() => ({state, wave}));
+const redraw = animate(() => ({state, visual: $('visual').value, signal: meter.read()}));
 
 function update(next, hint = '') {
   state = next;
@@ -27,22 +42,19 @@ function update(next, hint = '') {
   $('send').disabled = busy;
   $('mic').disabled = next === 'processing';
   $('language').disabled = busy;
+  autoSend.disabled = busy;
   $('mic').setAttribute('aria-pressed', String(next === 'recording'));
   $('mic').textContent = next === 'recording' ? 'Parar e transcrever' : 'Gravar pergunta';
   redraw?.();
 }
 
-$('visual').addEventListener('click', () => {
-  wave = !wave;
-  $('visual').setAttribute('aria-pressed', String(wave));
-  $('visual').textContent = wave ? 'Modo núcleo' : 'Modo onda';
-  redraw?.();
-});
+$('visual').addEventListener('change', () => redraw?.());
 
 function stopPlayback() {
   speechGeneration++;
   window.speechSynthesis?.cancel();
   if (audio) {
+    meter.clear();
     audio.onended = null;
     audio.onerror = null;
     audio.pause();
@@ -54,6 +66,7 @@ function stopPlayback() {
 
 $('voice').addEventListener('click', () => {
   voice = !voice;
+  if (voice) meter.unlock();
   $('voice').setAttribute('aria-pressed', String(voice));
   $('voice').textContent = voice ? 'Desligar som' : 'Ligar som';
   if (!voice) {
@@ -101,8 +114,14 @@ async function speak(text, sample) {
       }
       if (generation !== speechGeneration) return;
       audio = new Audio(sample ? 'briefing.mp3' : playbackUrl);
+      meter.playback(audio);
       audio.onended = () => { stopPlayback(); if (state === 'speaking') update('idle'); };
-      audio.onerror = () => { if (generation === speechGeneration) update('error','O áudio falhou. A resposta está na conversa.'); };
+      audio.onerror = () => {
+        if (generation === speechGeneration) {
+          stopPlayback();
+          update('error','O áudio falhou. A resposta está na conversa.');
+        }
+      };
       update('speaking');
       await audio.play();
       return;
@@ -116,12 +135,15 @@ async function speak(text, sample) {
     update('speaking');
     window.speechSynthesis.speak(utterance);
   } catch (error) {
-    if (generation === speechGeneration) update('error', error.message);
+    if (generation === speechGeneration) {
+      stopPlayback();
+      update('error', error.message);
+    }
   }
 }
 
-async function send(text, sample = false) {
-  if (!text.trim() || ['recording','processing'].includes(state)) return;
+async function send(text, {sample = false, fromVoice = false} = {}) {
+  if (!text.trim() || (!fromVoice && ['recording','processing'].includes(state))) return;
   stopPlayback();
   addMessage('user', text);
   update('processing', 'Preparando a resposta…');
@@ -132,6 +154,7 @@ async function send(text, sample = false) {
     addMessage('assistant', response);
     await speak(response, sample);
   } catch (error) {
+    if (fromVoice && !$('message').value.trim()) $('message').value = text;
     update('error', error.message);
   }
 }
@@ -142,7 +165,7 @@ form.addEventListener('submit', (event) => {
   $('message').value = '';
   void send(text);
 });
-$('example').addEventListener('click', () => void send('Me dê o briefing de exemplo.', true));
+$('example').addEventListener('click', () => void send('Me dê o briefing de exemplo.', {sample:true}));
 
 async function localSpeech() {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -165,16 +188,40 @@ async function localSpeech() {
     update('error','O idioma português local não está pronto neste navegador. Use a ponte local ou digite.');
     return;
   }
-  const recognition = new Recognition();
-  recognition.lang = 'pt-BR';
-  recognition.processLocally = true;
-  recognition.onresult = ({results}) => putTranscript(results[0][0].transcript);
-  recognition.onerror = ({error}) => update('error', error === 'not-allowed'
-    ? 'Permita o acesso ao microfone nas configurações do site ou digite.'
-    : 'O navegador não conseguiu transcrever. Tente novamente ou digite.');
-  recognition.onend = () => { if (state === 'recording') update('idle'); };
-  recorder = recognition;
-  recognition.start();
+  update('processing', 'Aguardando acesso ao microfone…');
+  const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true}});
+  meter.microphone(stream);
+  let released = false;
+  function releaseMic() {
+    if (released) return;
+    released = true;
+    meter.clear();
+    stream.getTracks().forEach(track => track.stop());
+  }
+  try {
+    const recognition = new Recognition();
+    recognition.lang = 'pt-BR';
+    recognition.processLocally = true;
+    recognition.onresult = ({results}) => {
+      releaseMic();
+      putTranscript(results[0][0].transcript);
+    };
+    recognition.onerror = ({error}) => {
+      releaseMic();
+      update('error', error === 'not-allowed'
+        ? 'Permita o acesso ao microfone nas configurações do site ou digite.'
+        : 'O navegador não conseguiu transcrever. Tente novamente ou digite.');
+    };
+    recognition.onend = () => {
+      releaseMic();
+      if (state === 'recording') update('idle');
+    };
+    recorder = recognition;
+    recognition.start();
+  } catch (error) {
+    releaseMic();
+    throw error;
+  }
   update('recording','Fale e pressione de novo para encerrar.');
 }
 
@@ -193,8 +240,13 @@ $('language').addEventListener('click', async () => {
 });
 
 function putTranscript(text) {
-  if (!text.trim()) { update('error','Nenhuma fala detectada. Tente novamente.'); return; }
-  $('message').value = text.slice(0, 4000);
+  const transcript = text.trim().slice(0, 4000);
+  if (!transcript) { update('error','Nenhuma fala detectada. Tente novamente.'); return; }
+  if (autoSend.checked) {
+    void send(transcript, {fromVoice:true});
+    return;
+  }
+  $('message').value = transcript;
   update('idle', 'Revise a transcrição antes de enviar.');
   $('message').focus();
 }
@@ -211,6 +263,7 @@ async function localRecorder() {
   current.ondataavailable = ({data}) => chunks.push(data);
   current.onstop = async () => {
     clearTimeout(captureTimer);
+    meter.clear();
     stream.getTracks().forEach(track => track.stop());
     update('processing','Transcrevendo o áudio no seu computador…');
     try {
@@ -225,6 +278,7 @@ async function localRecorder() {
     stream.getTracks().forEach(track => track.stop());
     throw error;
   }
+  meter.microphone(stream);
   recorder = current;
   captureTimer = setTimeout(() => { if (current.state === 'recording') current.stop(); }, 30000);
   update('recording', 'Fale e pressione de novo para encerrar. Limite de 30 segundos.');
@@ -237,6 +291,7 @@ $('mic').addEventListener('click', async () => {
     return;
   }
   stopPlayback();
+  meter.unlock();
   try {
     if (bridge) await localRecorder();
     else await localSpeech();
