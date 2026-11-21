@@ -6,6 +6,7 @@ const bridge = location.hostname === '127.0.0.1' && document.documentElement.dat
 const briefing = 'Neste briefing de exemplo, você tem cinco mensagens simuladas e uma reunião às dez. O painel está pronto para receber seu próximo pedido.';
 const status = {idle:'Pronto', recording:'Gravando', processing:'Processando', speaking:'Falando', error:'Atenção'};
 const session = crypto.randomUUID();
+const speechLanguage = {langs:['pt-BR'], processLocally:true};
 let state = 'idle';
 let wave = false;
 let voice = false;
@@ -25,6 +26,7 @@ function update(next, hint = '') {
   $('example').disabled = busy;
   $('send').disabled = busy;
   $('mic').disabled = next === 'processing';
+  $('language').disabled = busy;
   $('mic').setAttribute('aria-pressed', String(next === 'recording'));
   $('mic').textContent = next === 'recording' ? 'Parar e transcrever' : 'Gravar pergunta';
   redraw?.();
@@ -40,7 +42,11 @@ $('visual').addEventListener('click', () => {
 function stopPlayback() {
   speechGeneration++;
   window.speechSynthesis?.cancel();
-  audio?.pause();
+  if (audio) {
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+  }
   if (playbackUrl) URL.revokeObjectURL(playbackUrl);
   playbackUrl = undefined;
   audio = undefined;
@@ -145,7 +151,16 @@ async function localSpeech() {
     return;
   }
   update('processing','Verificando o reconhecimento de voz local…');
-  const ready = await Recognition.available({langs:['pt-BR'], processLocally:true});
+  const ready = await Recognition.available(speechLanguage);
+  $('language').hidden = ready !== 'downloadable' || typeof Recognition.install !== 'function';
+  if (!$('language').hidden) {
+    update('idle','Baixe o idioma para transcrever português no navegador.');
+    return;
+  }
+  if (ready === 'downloading') {
+    update('idle','O navegador está baixando o idioma. Tente gravar em instantes.');
+    return;
+  }
   if (ready !== 'available') {
     update('error','O idioma português local não está pronto neste navegador. Use a ponte local ou digite.');
     return;
@@ -154,12 +169,28 @@ async function localSpeech() {
   recognition.lang = 'pt-BR';
   recognition.processLocally = true;
   recognition.onresult = ({results}) => putTranscript(results[0][0].transcript);
-  recognition.onerror = () => update('error','O navegador não conseguiu transcrever. Tente novamente ou digite.');
+  recognition.onerror = ({error}) => update('error', error === 'not-allowed'
+    ? 'Permita o acesso ao microfone nas configurações do site ou digite.'
+    : 'O navegador não conseguiu transcrever. Tente novamente ou digite.');
   recognition.onend = () => { if (state === 'recording') update('idle'); };
   recorder = recognition;
   recognition.start();
   update('recording','Fale e pressione de novo para encerrar.');
 }
+
+$('language').addEventListener('click', async () => {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  update('processing', 'Baixando o português para o reconhecimento local…');
+  try {
+    const installed = await Recognition.install(speechLanguage);
+    if (!installed) throw new Error('O navegador não concluiu o download.');
+    $('language').hidden = true;
+    update('idle', 'Português instalado. Clique em Gravar pergunta.');
+    $('mic').focus();
+  } catch {
+    update('error', 'O navegador não conseguiu instalar o idioma. Tente de novo, digite ou use a ponte local.');
+  }
+});
 
 function putTranscript(text) {
   if (!text.trim()) { update('error','Nenhuma fala detectada. Tente novamente.'); return; }

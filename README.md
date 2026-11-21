@@ -18,11 +18,11 @@ O Painel de Voz é uma interface para quem usa ou quer montar um assistente pess
 
 ### Experimente a demonstração
 
-A página pública tem briefing fictício narrado, holograma em Canvas e envio de texto em modo demonstrativo. Clique em **Ligar som** e, em seguida, em **Mostrar briefing de exemplo**. A captura no site público exige um navegador com reconhecimento local em português instalado. A ponte abaixo usa reconhecimento local próprio e permite revisar a transcrição antes de enviar.
+A página pública tem briefing fictício narrado, holograma em Canvas e envio de texto em modo demonstrativo. Clique em **Ligar som** e, em seguida, em **Mostrar briefing de exemplo**. No site público, **Gravar pergunta** verifica se o navegador reconhece português no dispositivo. Se ele oferecer o idioma, use **Baixar português para o microfone** e tente novamente. Permita o acesso ao microfone, fale e clique em **Parar e transcrever**. Se o recurso não estiver disponível, use a instalação local ou digite. A ponte abaixo usa reconhecimento local próprio e permite revisar a transcrição antes de enviar.
 
 ### Ligue a ponte local
 
-Use Python 3.10+, Git e um navegador atual. Baixe o projeto, abra a pasta e execute:
+Use [Python 3.10 ou mais recente](https://www.python.org/downloads/), [Git](https://git-scm.com/install/) e um navegador atual. Abra um terminal (PowerShell no Windows, Terminal no macOS ou Linux), vá até a pasta onde guarda seus projetos e cole o bloco abaixo. No Windows, troque `python3` por `py -3` se necessário.
 
 ```bash
 git clone https://github.com/inematds/painel-de-voz.git
@@ -30,7 +30,7 @@ cd painel-de-voz
 python3 bridge.py
 ```
 
-Abra `http://127.0.0.1:8765/app/`. Nesse modo a ponte devolve o texto recebido. Para ouvir e transcrever localmente, instale `faster-whisper` e `piper-tts` no seu ambiente Python e tenha um modelo multilíngue do faster-whisper e uma voz Piper em português no disco. Os comandos abaixo instalam os pacotes e baixam, uma vez, o modelo multilíngue `base` para transcrição e a voz brasileira Faber. Depois disso, a ponte lê os arquivos no disco. Pare a ponte anterior com Ctrl+C antes de iniciar a versão com voz.
+Abra `http://127.0.0.1:8765/app/`. A faixa abaixo do título deve dizer “Ponte local · respostas de demonstração”. Digite “Olá” e envie. Nesse modo a ponte devolve o texto recebido. Para ouvir e transcrever localmente, instale `faster-whisper` e `piper-tts` no seu ambiente Python e tenha um modelo multilíngue do faster-whisper e uma voz Piper em português no disco. Os comandos abaixo instalam os pacotes e baixam, uma vez, o modelo multilíngue `base` para transcrição e a voz brasileira Faber. Depois disso, a ponte lê os arquivos no disco. Pare a ponte anterior com Ctrl+C antes de iniciar a versão com voz.
 
 ```bash
 python3 -m venv .venv
@@ -41,7 +41,7 @@ python -m piper.download_voices pt_BR-faber-medium
 python bridge.py --whisper-model base --piper-model pt_BR-faber-medium.onnx
 ```
 
-Quem já tem o ambiente do inemavox com faster-whisper pode usar aquele Python e o modelo em cache, por exemplo `--whisper-model base`. Em Windows, ative o ambiente com `.venv\Scripts\Activate.ps1`. Linux foi o sistema de teste.
+Quem já tem o ambiente do inemavox com faster-whisper pode usar aquele Python e o modelo em cache, por exemplo `--whisper-model base`. No Windows, crie o ambiente com `py -3 -m venv .venv` e ative-o com `.venv\Scripts\Activate.ps1`. Linux foi o sistema de teste.
 
 ## O processo, do início ao fim
 
@@ -52,7 +52,7 @@ Quem já tem o ambiente do inemavox com faster-whisper pode usar aquele Python e
    python3 bridge.py --intelecto ../intelecto-v2 --whisper-model base --piper-model pt_BR-faber-medium.onnx
    ```
 
-   O comando usa o motor simulado do Intelecto. Para conversar com um modelo de IA, acrescente `--intelecto-model NOME-DO-MODELO-LOCAL`. A conversa passa pelo Ollama em `127.0.0.1:11434` e precisa de um modelo já disponível. O adaptador mantém estado próprio em `~/.painel-de-voz/intelecto` e abre a conversa com um registro vazio de ferramentas. A memória direta do Intelecto pode guardar pedidos como “lembre que…”.
+   O comando usa o motor simulado do Intelecto. Para conversar com um modelo de IA, abra o Ollama, rode `ollama list` em outro terminal e copie um nome da coluna `NAME`. Pare a ponte com Ctrl+C e execute a mesma linha acrescentando `--intelecto-model NOME-DO-MODELO-LOCAL`, com o nome copiado no lugar do marcador. A conversa passa pelo Ollama em `127.0.0.1:11434`. O adaptador mantém estado próprio em `~/.painel-de-voz/intelecto` e abre a conversa com um registro vazio de ferramentas. A memória direta do Intelecto pode guardar pedidos como “lembre que…”.
 
 2. **Experimente voz**. Abra o painel local, clique em **Gravar pergunta**, permita o microfone, fale e clique em **Parar e transcrever**. Revise e envie. Com o som ligado, o Piper lê a resposta em português. Grave comandos de até 30 segundos. A ponte toca até 3.000 caracteres por resposta.
 
