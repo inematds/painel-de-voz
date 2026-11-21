@@ -55,9 +55,23 @@ If you already have the inemavox environment with faster-whisper, you can use th
 
    The command uses Intelecto's simulated engine. To talk to an AI model, open Ollama, run `ollama list` in another terminal, and copy a name from the `NAME` column. Stop the bridge with Ctrl+C and run the same line, adding `--intelecto-model LOCAL-MODEL-NAME` with the copied name in place of the placeholder. The conversation goes through Ollama at `127.0.0.1:11434`. The adapter keeps its own state in `~/.painel-de-voz/intelecto` and opens the conversation with an empty tool registry. Intelecto's direct memory can store requests such as “remember that…”.
 
-2. **Try voice**. Open the local panel, click **Gravar pergunta**, allow microphone access, speak, and click **Parar e transcrever**. Review and send. With sound on, Piper reads the response in Portuguese. Record commands up to 30 seconds long. The bridge plays up to 3,000 characters per response.
+2. **Try voice**. Open the local panel, click **Gravar pergunta**, allow microphone access, speak, and click **Parar e transcrever**. Review and send. With sound on, Piper reads the response in Portuguese. The bridge plays up to 3,000 characters per response.
    Enable “Enviar automaticamente após transcrever” to send the speech as soon as the text is ready. With this option off, you can review the text and click “Enviar”. Choose Robô, Mulher-robô, Onda de áudio, or Núcleo in Visual. The wave shows the actual signal from the microphone and audio played by the panel. The core pulses, and the robots’ mouths follow the signal’s intensity.
 
+   Choose the speaker in the Voz selector and click Ouvir amostra. The demo offers Faber and Edresson. In the local bridge, you’ll see the Piper voices you configured and the Portuguese voices installed in your browser.
+
+   To make a long request, click Gravar pergunta and finish with Parar e transcrever. Each request can last up to three minutes. Short pauses won’t end a manual recording.
+
+   To talk without pressing the button for every request, turn on Escuta contínua and automatic sending. After about three seconds of silence, the panel sends the request and starts listening again after responding. With automatic sending off, it waits for your review. Use Desligar escuta contínua to turn off the microphone.
+
+   To offer two Piper voices, download Faber and Edresson and repeat the --piper-model option in the line that starts the bridge. See the example below.
+
+   ```bash
+   python -m piper.download_voices pt_BR-faber-medium pt_BR-edresson-low
+   python bridge.py --whisper-model base --piper-model pt_BR-faber-medium.onnx --piper-model pt_BR-edresson-low.onnx
+   ```
+
+   [Piper · Faber](https://huggingface.co/rhasspy/piper-voices/tree/main/pt/pt_BR/faber) · [Piper · Edresson](https://huggingface.co/rhasspy/piper-voices/blob/main/pt/pt_BR/edresson/low/MODEL_CARD)
 
 3. **Connect another assistant**. The `--adapter` option goes last and takes the executable and its fixed arguments. Each turn, the process receives JSON on stdin and returns JSON on stdout. Use stderr for diagnostics and treat `session` as an identifier for reusing the history. The bridge enforces an 85-second limit per turn.
 

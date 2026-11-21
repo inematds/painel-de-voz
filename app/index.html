@@ -29,7 +29,12 @@
       <div class="actions">
         <button id="language" type="button" hidden>Baixar português para o microfone</button>
         <button id="mic" type="button" aria-pressed="false">Gravar pergunta</button>
+        <button id="listen" type="button" aria-pressed="false">Ligar escuta contínua</button>
         <button id="voice" type="button" aria-pressed="false">Ligar som</button>
+      </div>
+      <div class="voice-settings">
+        <div class="visual-choice"><label for="voice-choice">Voz</label><select id="voice-choice"></select></div>
+        <button id="voice-preview" type="button">Ouvir amostra</button>
       </div>
       <label class="voice-option"><input id="auto-send" type="checkbox"> Enviar automaticamente após transcrever</label>
     </div>
@@ -40,7 +45,7 @@
     <button id="example" type="button">Mostrar briefing de exemplo</button>
     <form>
       <label for="message">Seu pedido</label>
-      <div class="composer"><textarea rows="2" id="message" maxlength="4000" placeholder="Escreva ou grave uma pergunta…" required></textarea><button id="send" type="submit">Enviar</button></div>
+      <div class="composer"><textarea rows="2" id="message" maxlength="12000" placeholder="Escreva ou grave uma pergunta…" required></textarea><button id="send" type="submit">Enviar</button></div>
     </form>
   </section>
 </main>

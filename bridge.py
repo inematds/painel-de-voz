@@ -8,7 +8,6 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
@@ -19,8 +18,12 @@ APP_FILES = {
     'panel.js': 'text/javascript; charset=utf-8',
     'hologram.js': 'text/javascript; charset=utf-8',
     'voice-meter.js': 'text/javascript; charset=utf-8',
+    'capture.js': 'text/javascript; charset=utf-8',
     'style.css': 'text/css; charset=utf-8',
     'briefing.mp3': 'audio/mpeg',
+    'briefing-edresson.mp3': 'audio/mpeg',
+    'resposta-faber.mp3': 'audio/mpeg',
+    'resposta-edresson.mp3': 'audio/mpeg',
 }
 AUDIO_TYPES = {'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/wav', 'audio/x-wav'}
 SESSION = re.compile(r'[0-9a-f-]{36}')
@@ -36,6 +39,9 @@ class Bridge:
     def __init__(self, args):
         self.args = args
         self.whisper = None
+        self.voices = {}
+        for model in args.piper_model:
+            self.voices[model.stem] = model
         self.lock = Lock()
         self.intelecto = None
         self.agent_worker = None
@@ -59,8 +65,8 @@ class Bridge:
         data = json.loads(raw)
         text = data.get('text', '')
         session = data.get('session', '')
-        if not isinstance(text, str) or not 0 < len(text.strip()) <= 4000:
-            raise Problem('Escreva um pedido de até 4.000 caracteres.')
+        if not isinstance(text, str) or not 0 < len(text.strip()) <= 12000:
+            raise Problem('Escreva um pedido de até 12.000 caracteres.')
         if not isinstance(session, str) or not SESSION.fullmatch(session):
             raise Problem('A sessão do painel expirou. Recarregue a página.')
         if self.intelecto:
@@ -83,7 +89,10 @@ class Bridge:
                     self.args.whisper_model, device='cpu', compute_type='int8',
                     cpu_threads=4, local_files_only=True,
                 )
-            segments, _ = self.whisper.transcribe(BytesIO(raw), language='pt', vad_filter=True)
+            segments, _ = self.whisper.transcribe(
+                BytesIO(raw), language='pt', vad_filter=True,
+                vad_parameters={'threshold': 0.35, 'speech_pad_ms': 500},
+            )
             return ' '.join(segment.text.strip() for segment in segments).strip()
 
     def speak(self, raw):
@@ -91,10 +100,13 @@ class Bridge:
         text = data.get('text', '')
         if not isinstance(text, str) or not text.strip():
             raise Problem('Falta o texto a ser narrado.')
-        if not self.args.piper_model:
+        if not self.voices:
             raise Problem('Inicie a ponte com --piper-model para ouvir as respostas.', 503)
+        voice = data.get('voice') or next(iter(self.voices))
+        if not isinstance(voice, str) or voice not in self.voices:
+            raise Problem('A voz escolhida não está disponível.')
         result = subprocess.run(
-            ['piper', '--model', self.args.piper_model, '--output_file', '-'],
+            ['piper', '--model', str(self.voices[voice]), '--output_file', '-'],
             input=text[:3000].encode() + b'\n', capture_output=True, timeout=30, check=True,
         )
         if result.stdout[:4] != b'RIFF':
@@ -144,8 +156,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Location', '/app/')
             self.end_headers()
         elif self.path in ('/app/', '/app/index.html'):
-            page = (APP / 'index.html').read_text().replace(
-                '<html lang="pt-BR">', f'<html lang="pt-BR" data-bridge="yes" data-agent="{escape(self.bridge.label)}">',
+            voices = escape(json.dumps(list(self.bridge.voices), ensure_ascii=False))
+            page = (APP / 'index.html').read_text(encoding='utf-8').replace(
+                '<html lang="pt-BR">', f'<html lang="pt-BR" data-bridge="yes" data-agent="{escape(self.bridge.label)}" data-voices="{voices}">',
             )
             self.send_content(200, page.encode(), 'text/html; charset=utf-8')
         elif self.path.startswith('/app/') and self.path[5:] in APP_FILES:
@@ -179,7 +192,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get_content_type() not in allowed:
             raise Problem('Formato de mídia não aceito.', 415)
         length = int(self.headers.get('Content-Length', '0'))
-        if not 0 < length <= (2_000_000 if path == '/transcribe' else 65_536):
+        if not 0 < length <= (12_000_000 if path == '/transcribe' else 65_536):
             raise Problem('O pedido está vazio ou é grande demais.', 413)
         raw = self.rfile.read(length)
         if path == '/speak':
@@ -195,7 +208,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--whisper-model', help='Modelo faster-whisper disponível em cache ou no disco.')
-    parser.add_argument('--piper-model', help='Arquivo .onnx de uma voz local do Piper.')
+    parser.add_argument('--piper-model', action='append', type=Path, default=[], help='Arquivo .onnx de uma voz Piper. Repita para oferecer várias vozes.')
     parser.add_argument('--intelecto-model', help='Modelo previamente instalado no Ollama local.')
     engines = parser.add_mutually_exclusive_group()
     engines.add_argument('--intelecto', type=Path, help='Pasta com o código do Intelecto v2.')
@@ -203,8 +216,12 @@ def main():
     args = parser.parse_args()
     if args.intelecto_model and not args.intelecto:
         parser.error('--intelecto-model requer --intelecto')
-    if args.piper_model:
-        args.piper_model = os.path.abspath(os.path.expanduser(args.piper_model))
+    args.piper_model = [model.expanduser().resolve() for model in args.piper_model]
+    for model in args.piper_model:
+        if not model.is_file() or not model.with_suffix(model.suffix + '.json').is_file():
+            parser.error(f'voz Piper requer o arquivo ONNX e o JSON correspondente: {model}')
+    if len({model.stem for model in args.piper_model}) != len(args.piper_model):
+        parser.error('os arquivos de voz Piper precisam ter nomes diferentes')
     bridge = Bridge(args)
     with ThreadingHTTPServer(('127.0.0.1', args.port), partial(Handler, bridge)) as server:
         print(f'{bridge.label}\nhttp://127.0.0.1:{server.server_port}/app/', flush=True)
