@@ -49,6 +49,7 @@ If you already have the inemavox environment with faster-whisper, you can use th
 
    ```bash
    git clone https://github.com/inematds/intelecto-v2.git ../intelecto-v2
+   python3 bridge.py --intelecto ../intelecto-v2
    python3 bridge.py --intelecto ../intelecto-v2 --whisper-model base --piper-model pt_BR-faber-medium.onnx
    ```
 
