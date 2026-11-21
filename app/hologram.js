@@ -53,7 +53,10 @@ function draw(w, h, scale, time, state, visual, signal) {
   light.addColorStop(0, 'rgba(80,208,254,.16)');
   light.addColorStop(1, 'rgba(41,130,180,0)');
   const avatar = visual === 'robot' || visual === 'robot-f';
-  if (avatar) drawRobot(ctx, Math.min(w / 320, h / 310, 1.74), time, level, visual === 'robot-f', state);
+  if (avatar) {
+    const speechLevel = state === 'speaking' && signal?.origin === 'playback' ? level : 0;
+    drawRobot(ctx, Math.min(w / 320, h / 310, 1.74), time, speechLevel, visual === 'robot-f', state);
+  }
   ctx.save();
   ctx.globalCompositeOperation = 'destination-over';
   ctx.fillStyle = light;
@@ -209,13 +212,25 @@ function drawEngineer(ctx, layer, blink, gaze, openness) {
     plate(ctx, 'M-4 -35 H4', null, '#699ba3', 1.4);
     plate(ctx, 'M-43 14 L-28 6 Q0 12 28 6 L43 14 L33 37 L19 48 H-19 L-33 37Z', shell, '#c0d9d9');
     plate(ctx, 'M-30 16 Q0 12 30 16 L25 31 Q0 38 -25 31Z', joint, '#527783');
-    // The lower edge of the speaking aperture moves down with measured audio.
+    // The upper rail stays fixed while the hinged lower rail and chin follow the voice.
+    const jawDrop = openness * 10;
+    ctx.beginPath();
+    ctx.moveTo(-24, 18);
+    ctx.lineTo(-18, 16);
+    ctx.lineTo(18, 16);
+    ctx.lineTo(24, 18);
+    ctx.lineTo(18, 21 + jawDrop);
+    ctx.lineTo(-18, 21 + jawDrop);
+    ctx.closePath();
+    ctx.fillStyle = '#070f17';
+    ctx.fill();
+    plate(ctx, 'M-23 18 L-17 17 H17 L23 18', null, '#94e1e4', 1.35);
     ctx.save();
-    ctx.translate(0,20);
-    ctx.scale(1,.25 + openness * 1.6);
-    plate(ctx, 'M-23 0 Q0 -3 23 0 Q17 9 0 9 Q-17 9 -23 0Z', '#52c5cc', '#98ffff', 1.6);
+    ctx.translate(0, jawDrop);
+    plate(ctx, 'M-22 20 L-17 21 H17 L22 20 L17 24 H-17Z', '#387480', '#79bec7', .9);
+    ctx.translate(0, -jawDrop * .58);
+    plate(ctx, 'M-15 41 H15', null, '#527683', 1.4);
     ctx.restore();
-    plate(ctx, 'M-15 41 Q0 44 15 41', null, '#527683', 1.6);
     plate(ctx, 'M-10 -77 Q0 -78 10 -77', null, '#ffbd76', 2.7);
   });
 }
@@ -324,7 +339,7 @@ function drawRobot(ctx, size, time, level, feminine, state) {
   const cadence = time % 5.6;
   const blink = 1 - .94 * Math.max(0,1 - Math.abs(cadence - 4.8) / .12);
   const gaze = Math.sin(time * .85) * (state === 'processing' ? 2.8 : 1.2);
-  const openness = Math.sqrt(Math.min(1, Math.max(0,level)));
+  const openness = Math.min(1, Math.max(0, (level - .035) * 1.45));
   if (feminine) drawAndroid(ctx,layer,blink,gaze,openness);
   else drawEngineer(ctx,layer,blink,gaze,openness);
 

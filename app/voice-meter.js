@@ -1,6 +1,7 @@
 export function createVoiceMeter() {
   let context;
   let source;
+  let origin;
   let analyser;
   let samples;
   let level = 0;
@@ -8,7 +9,7 @@ export function createVoiceMeter() {
   function clear() {
     source?.disconnect();
     analyser?.disconnect();
-    source = analyser = samples = undefined;
+    source = analyser = samples = origin = undefined;
     level = 0;
   }
 
@@ -23,8 +24,9 @@ export function createVoiceMeter() {
     }
   }
 
-  function connect(input) {
+  function connect(input, channel) {
     source = input;
+    origin = channel;
     analyser = context.createAnalyser();
     analyser.fftSize = 512;
     samples = new Float32Array(analyser.fftSize);
@@ -35,7 +37,7 @@ export function createVoiceMeter() {
     clear();
     if (!context) return;
     try {
-      connect(context.createMediaStreamSource(stream));
+      connect(context.createMediaStreamSource(stream), 'microphone');
     } catch {
       clear();
     }
@@ -45,7 +47,7 @@ export function createVoiceMeter() {
     clear();
     if (context?.state !== 'running') return;
     try {
-      connect(context.createMediaElementSource(element));
+      connect(context.createMediaElementSource(element), 'playback');
       analyser.connect(context.destination);
     } catch {
       clear();
@@ -59,7 +61,7 @@ export function createVoiceMeter() {
     for (const sample of samples) power += sample * sample;
     const target = Math.min(1, Math.max(0, (Math.sqrt(power / samples.length) - .007) * 5));
     level += (target - level) * (target > level ? .56 : .20);
-    return {samples, level};
+    return {samples, level, origin};
   }
 
   return {clear, unlock, microphone, playback, read};
