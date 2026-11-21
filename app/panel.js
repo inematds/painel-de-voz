@@ -49,7 +49,7 @@ function stopPlayback() {
 $('voice').addEventListener('click', () => {
   voice = !voice;
   $('voice').setAttribute('aria-pressed', String(voice));
-  $('voice').textContent = voice ? 'Som ligado' : 'Som desligado';
+  $('voice').textContent = voice ? 'Desligar som' : 'Ligar som';
   if (!voice) {
     stopPlayback();
     if (state === 'speaking') update('idle');
