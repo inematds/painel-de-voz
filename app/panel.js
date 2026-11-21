@@ -1,4 +1,5 @@
 import {animate} from './hologram.js';
+import {articulationFor} from './face-speech.js';
 import {openCapture} from './capture.js';
 import {createVoiceMeter} from './voice-meter.js';
 
@@ -70,8 +71,15 @@ let nextListen;
 
 let audio;
 let playbackUrl;
+let articulate;
 let speechGeneration = 0;
-const redraw = animate(() => ({state, visual: $('visual').value, signal: meter.read()}));
+const redraw = animate(() => {
+  const visual = $('visual').value;
+  const signal = meter.read();
+  const articulation = visual === 'human' && state === 'speaking' && signal?.origin === 'playback'
+    ? articulate?.(audio.currentTime / audio.duration, signal.level) : null;
+  return {state, visual, signal, articulation};
+});
 
 function update(next, hint = '') {
   state = next;
@@ -109,6 +117,7 @@ function stopPlayback() {
   if (playbackUrl) URL.revokeObjectURL(playbackUrl);
   playbackUrl = undefined;
   audio = undefined;
+  articulate = undefined;
 }
 
 function setVoice(enabled) {
@@ -172,6 +181,7 @@ async function speak(text, sample) {
       }
       if (generation !== speechGeneration) return;
       audio = new Audio(demoFile || playbackUrl);
+      articulate = articulationFor(text.slice(0,3000));
       meter.playback(audio);
       audio.onended = () => { stopPlayback(); if (state === 'speaking') update('idle'); };
       audio.onerror = () => {

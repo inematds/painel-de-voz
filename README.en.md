@@ -56,7 +56,9 @@ If you already have the inemavox environment with faster-whisper, you can use th
    The command uses Intelecto's simulated engine. To talk to an AI model, open Ollama, run `ollama list` in another terminal, and copy a name from the `NAME` column. Stop the bridge with Ctrl+C and run the same line, adding `--intelecto-model LOCAL-MODEL-NAME` with the copied name in place of the placeholder. The conversation goes through Ollama at `127.0.0.1:11434`. The adapter keeps its own state in `~/.painel-de-voz/intelecto` and opens the conversation with an empty tool registry. Intelecto's direct memory can store requests such as “remember that…”.
 
 2. **Try voice**. Open the local panel, click **Gravar pergunta**, allow microphone access, speak, and click **Parar e transcrever**. Review and send. With sound on, Piper reads the response in Portuguese. The bridge plays up to 3,000 characters per response.
-   Enable “Enviar automaticamente após transcrever” to send the speech as soon as the text is ready. With this option off, you can review the text and click “Enviar”. Choose Robô, Mulher-robô, Onda de áudio, or Núcleo in Visual. The wave shows the actual signal from the microphone and audio played by the panel. The core pulses with the audio. The avatars’ mouths move only when the assistant responds with audio played through the panel.
+   Enable “Enviar automaticamente após transcrever” to send the speech as soon as the text is ready. With this option off, you can review the text and click “Enviar”. In the Visual selector, choose Robô, Mulher-robô, or Rosto 3D. Rosto 3D is an illuminated human mesh that changes perspective as the head turns. The wave and core are also in the same selector. The wave shows the actual signal from the microphone and audio played by the panel. The core pulses with the audio. The avatars’ mouths move only when the assistant responds with audio played through the panel.
+
+   In Rosto 3D, the response text suggests shapes for the lips, and the played audio guides their opening. The timing of the shapes to the speech is approximate.
 
    Choose the speaker in the Voz selector and click Ouvir amostra. The demo offers Faber and Edresson. In the local bridge, you’ll see the Piper voices you configured and the Portuguese voices installed in your browser.
 
@@ -90,3 +92,4 @@ The adapter process runs with the permissions of the person who starts the bridg
 ## Based on Mark-LVII
 
 [Mark-LVII by FatihMakes](https://github.com/FatihMakes/Mark-LVII) is the source of inspiration and analysis. The panel was implemented separately. The [study of separable components](docs/ANALISE-MARK-LVII.md) covers briefings, routines, citation checking, resumable tasks, confirmations, and tips for connecting new adapters.
+[MediaPipe canonical face model](https://github.com/google-ai-edge/mediapipe/blob/61827c737472301b00078c3a70bf0815c2964a33/mediapipe/modules/face_geometry/data/canonical_face_model.obj) · [Apache License 2.0](docs/LICENSE-MEDIAPIPE.txt)

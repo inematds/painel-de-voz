@@ -1,3 +1,5 @@
+import {drawHumanHologram} from './human-hologram.js';
+
 const canvas = document.querySelector('#hologram');
 const context = canvas.getContext('2d');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -22,8 +24,8 @@ export function animate(getState) {
     frame = 0;
     if (!reduced.matches && time - lastDraw < 30) { schedule(); return; }
     lastDraw = time;
-    const {state, visual, signal} = getState();
-    draw(width, height, scale, reduced.matches ? 0 : time / 1000, state, visual, reduced.matches ? null : signal);
+    const {state, visual, signal, articulation} = getState();
+    draw(width, height, scale, reduced.matches ? 0 : time / 1000, state, visual, reduced.matches ? null : signal, reduced.matches ? null : articulation);
     if (!reduced.matches && !document.hidden) schedule();
   }
   new ResizeObserver(([entry]) => {
@@ -40,7 +42,7 @@ export function animate(getState) {
   return schedule;
 }
 
-function draw(w, h, scale, time, state, visual, signal) {
+function draw(w, h, scale, time, state, visual, signal, articulation) {
   if (!w || !h) return;
   const ctx = context;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -52,6 +54,10 @@ function draw(w, h, scale, time, state, visual, signal) {
   const light = ctx.createRadialGradient(0, 0, radius * .06, 0, 0, radius * 1.7);
   light.addColorStop(0, 'rgba(80,208,254,.16)');
   light.addColorStop(1, 'rgba(41,130,180,0)');
+  if (visual === 'human') {
+    drawHumanHologram(ctx,w,h,time,state,level,articulation);
+    return;
+  }
   const avatar = visual === 'robot' || visual === 'robot-f';
   if (avatar) {
     const speechLevel = state === 'speaking' && signal?.origin === 'playback' ? level : 0;

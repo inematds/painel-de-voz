@@ -56,7 +56,9 @@ Quem já tem o ambiente do inemavox com faster-whisper pode usar aquele Python e
    O comando usa o motor simulado do Intelecto. Para conversar com um modelo de IA, abra o Ollama, rode `ollama list` em outro terminal e copie um nome da coluna `NAME`. Pare a ponte com Ctrl+C e execute a mesma linha acrescentando `--intelecto-model NOME-DO-MODELO-LOCAL`, com o nome copiado no lugar do marcador. A conversa passa pelo Ollama em `127.0.0.1:11434`. O adaptador mantém estado próprio em `~/.painel-de-voz/intelecto` e abre a conversa com um registro vazio de ferramentas. A memória direta do Intelecto pode guardar pedidos como “lembre que…”.
 
 2. **Experimente voz**. Abra o painel local, clique em **Gravar pergunta**, permita o microfone, fale e clique em **Parar e transcrever**. Revise e envie. Com o som ligado, o Piper lê a resposta em português. A ponte toca até 3.000 caracteres por resposta.
-   Ative “Enviar automaticamente após transcrever” para enviar a fala assim que o texto estiver pronto. Com a opção desligada, você pode revisar o texto e clicar em Enviar. Escolha Robô, Mulher-robô, Onda de áudio ou Núcleo em Visual. A onda mostra o sinal real do microfone e do áudio reproduzido pelo painel. O núcleo pulsa com o áudio. A boca dos avatares só se move quando o assistente responde com áudio reproduzido pelo painel.
+   Ative “Enviar automaticamente após transcrever” para enviar a fala assim que o texto estiver pronto. Com a opção desligada, você pode revisar o texto e clicar em Enviar. No seletor Visual, escolha Robô, Mulher-robô ou Rosto 3D. O Rosto 3D é uma malha humana iluminada que muda de perspectiva ao virar a cabeça. A onda e o núcleo também estão no mesmo seletor. A onda mostra o sinal real do microfone e do áudio reproduzido pelo painel. O núcleo pulsa com o áudio. A boca dos avatares só se move quando o assistente responde com áudio reproduzido pelo painel.
+
+   No Rosto 3D, o texto da resposta sugere formatos para os lábios e o áudio reproduzido guia a abertura. O encaixe das formas no tempo da fala é aproximado.
 
    Escolha quem fala no seletor Voz e clique em Ouvir amostra. A demonstração oferece Faber e Edresson. Na ponte local, aparecem as vozes Piper que você configurou e as vozes em português instaladas no navegador.
 
@@ -90,3 +92,5 @@ O processo do adaptador roda com as permissões de quem inicia a ponte. Configur
 ## Baseado em Mark-LVII
 
 O [Mark-LVII de FatihMakes](https://github.com/FatihMakes/Mark-LVII) é a fonte de inspiração e análise. O painel foi implementado separadamente. O [estudo das peças isoláveis](docs/ANALISE-MARK-LVII.md) inclui briefing, rotinas, verificação de citações, tarefas que retomam, confirmações e dicas para ligar novos adaptadores.
+
+[MediaPipe canonical face model](https://github.com/google-ai-edge/mediapipe/blob/61827c737472301b00078c3a70bf0815c2964a33/mediapipe/modules/face_geometry/data/canonical_face_model.obj) · [Apache License 2.0](docs/LICENSE-MEDIAPIPE.txt)
